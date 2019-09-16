@@ -29,10 +29,12 @@ function me = epsilon( W )
     [filas, columnas] = size( W );
     S = filas;
     lim = 1 / (S - 1);
+    
     % e es un numero en el rango (0,lim)
     e = lim * rand( 1, 1 );
+    fprintf(1, "Epsilon = %d\n", e);
     
-    % matriz cuadrada
+    % me = matriz cuadrada
     me = ones( filas, filas );
     for i = 1:filas
         for j = 1:filas
@@ -47,15 +49,14 @@ function recurrencia( a, me )
     [filas, columnas] = size( a );
     % matriz que registra por columna el valor de a-esima
     an_total = a;
-    %eliminar: matriz_resp = zeros( filas, 1 );
     iteracion = 1;
-    % fin = 2;
     comprobacion = 0;
-    
-    disp(me);
     
     while iteracion < 150000
         fprintf(1, "Iteracion %d\n", iteracion);
+        
+        % clase del vector a clasificar
+        clase = 0;
         
         % matriz a-enesima
         aux = zeros( filas, 1 );
@@ -72,14 +73,15 @@ function recurrencia( a, me )
 
         % poslin
         for i = 1:filas
-            if an( filas , 1) < 0
-                an( filas , 1) = 0;
+            if an( i , 1) < 0
+                an( i , 1) = 0;
+            else
+                clase = i;
             end
         end
         
         % almacenar valores obtenidos
         for j = 1: filas
-            %eliminar: matriz_resp( j, iteracion ) = an( j, 1 );
             an_total( j, iteracion + 1 ) = an( j, 1 );
         end
 
@@ -105,6 +107,7 @@ function recurrencia( a, me )
                 suma = suma + ( an( m, 1 ) - an_total( m, iteracion ) ); 
             end
             if suma == 0
+                fprintf(1, "El vector pertenece a la clase %d\n", clase);
                 disp( an_total );
                 fprintf(1, "Fin\n");
                 graficar( an_total );
@@ -124,14 +127,13 @@ function graficar( an_total )
     M = zeros(columnas - 1, filas);
     
     for i = 1:filas
-        for j = 1:(columnas - 1)
+        for j = 1:columnas
             M( j, i ) = an_total( i, j );
         end
     end
-    disp( M );
     plot( M );
-    xlabel('valores')
-    ylabel('elementos a clasificar')
+    xlabel('t(n)')
+    ylabel('Clases')
 end
 
 

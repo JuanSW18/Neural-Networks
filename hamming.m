@@ -34,7 +34,7 @@ function me = epsilon( W )
     e = lim * rand( 1, 1 );
     fprintf(1, "Epsilon = %d\n", e);
     
-    % me = matriz cuadrada
+    % me => matriz cuadrada
     me = ones( filas, filas );
     for i = 1:filas
         for j = 1:filas
@@ -134,6 +134,8 @@ function graficar( an_total )
     plot( M );
     xlabel('t(n)')
     ylabel('Clases')
+    % Rango para mayor apreciacion de resultados
+    axis([1 inf -1 20])
 end
 
 

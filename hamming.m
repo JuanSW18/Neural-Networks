@@ -135,7 +135,7 @@ function graficar( an_total )
     xlabel('t(n)')
     ylabel('Clases')
     % Rango para mayor apreciacion de resultados
-    axis([1 inf -1 20])
+    axis([1 inf -1 15])
 end
 
 

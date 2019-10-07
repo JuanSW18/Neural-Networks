@@ -67,8 +67,7 @@ function procesar(P, T, max_epoch)
             % calculo del error
             e(1, j) = T(j, 1) - a;
             % nuevos valores para W y b
-            [W, b] = newValues(W, b, P, e(1, j), j);
-            %fprintf(1, "\tError %d = %d\n\n", j, e(1, j));
+            [W, b] = calcularNuevosValores(W, b, P, e(1, j), j);
             fprintf(1, "\tError = %d\n\n", e(1, j));
         end
         % Verificar que el error de cada iteracion es 0
@@ -76,7 +75,6 @@ function procesar(P, T, max_epoch)
         for z = 1: filas
             sum_e = sum_e + (e(1,z) == 0);
         end
-        % fprintf(1, "Error total = %d\n\n", sum_e);
         if sum_e == filas
             break;
         end
@@ -90,10 +88,10 @@ function procesar(P, T, max_epoch)
             fprintf(1, "Aprendizaje culminado: max_epoch alcanzado\n\n");
         end
     end
-    graficarW();
+    graficar();
 end
 
-function [W, b] = newValues(W, b, P, e, dato)
+function [W, b] = calcularNuevosValores(W, b, P, e, dato)
     [filas, columnas] = size(W);
     for i = 1:columnas
         W(1, i) = W(1, i) + e*P(dato, i);
@@ -119,40 +117,41 @@ function saveB(b)
     end
 end
 
-function graficarW()
+function graficar()
     W = dlmread("perceptron_w.txt");
     b = dlmread("perceptron_b.txt");
-    [menor, mayor] = buscarLimites();
+    [x_max, y_min, y_max] = buscarLimites();
     plot( W );
     hold on
     plot( b, 's-m','MarkerSize', 6 );
     % Rango para mayor apreciacion de resultados
-    axis([0 6 (menor-1) (mayor+1)]);
+    axis([0 (x_max+0.5) (y_min-0.5) (y_max+0.5)]);
     fclose('all');
 end
 
-function [menor, mayor] = buscarLimites()
+function [x_max, y_min, y_max] = buscarLimites()
     W = dlmread("perceptron_w.txt");
     b = dlmread("perceptron_b.txt");
     [filas, columnas] = size(W);
-    menor = 99;
-    mayor = -1;
+    x_max = filas;
+    y_min = 99;
+    y_max = -1;
     for i = 1:filas
         for j = 1:columnas
-            if mayor < W(i,j)
-                mayor = W(i,j);
+            if y_max < W(i,j)
+                y_max = W(i,j);
             end
-            if menor > W(i,j)
-                menor = W(i,j);
+            if y_min > W(i,j)
+                y_min = W(i,j);
             end
         end
     end
     for k = 1:filas
-        if mayor < b(k,1)
-            mayor = b(k,1);
+        if y_max < b(k,1)
+            y_max = b(k,1);
         end
-        if menor > b(k,1)
-            menor = b(k,1);
+        if y_min > b(k,1)
+            y_min = b(k,1);
         end
     end
 end

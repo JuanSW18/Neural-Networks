@@ -2,12 +2,25 @@ function perceptron()
     fprintf(1, "------------------------------------- \n");
     fprintf(1, "\x7c             Perceptron             \x7c\n");
     fprintf(1, "------------------------------------- \n");
+    cleanFolder();
     [P, T, max_epoch] = leerArchivo();
     procesar(P, T, max_epoch);
 end
 
+function cleanFolder()
+    hold off
+    filename1 = "perceptron_w.txt";
+    filename2 = "perceptron_b.txt";
+    if isfile(filename1)
+        delete perceptron_w.txt;
+    end
+    if isfile(filename2)
+        delete perceptron_b.txt;
+    end
+end
+
 function [P, T, max_epoch] = leerArchivo()
-    valores = dlmread("val_perceptron.txt");
+    valores = dlmread("perceptron_val.txt");
     [filas, columnas] = size(valores);
     j = 1;
     for i = 1:((filas - 1)/2)
@@ -20,14 +33,6 @@ function [P, T, max_epoch] = leerArchivo()
     max_epoch = valores(filas, 1);
 end
 
-function [W, b] = newValues(W, b, P, e, dato)
-    [filas, columnas] = size(W);
-    for i = 1:columnas
-        W(1, i) = W(1, i) + e*P(dato, i);
-    end
-    b = b + e;
-end
-
 function procesar(P, T, max_epoch)
     [filas, columnas] = size(P);
     % Valores aleatorios para W y b
@@ -37,12 +42,15 @@ function procesar(P, T, max_epoch)
     b = -5 + (5+5)*rand(1);
     e = zeros(1, filas);
     sum_e = 0;
+    
     for i = 1:max_epoch
         fprintf(1, "EPOCA %d\n\n", i);
         for j = 1:filas
             fprintf(1, "iteracion %d\n\n", j);
             disp(W);
             disp(b);
+            saveW(W);
+            saveB(b);
             n = 0;
             a = 0;
             % producto de W y P
@@ -82,21 +90,69 @@ function procesar(P, T, max_epoch)
             fprintf(1, "Aprendizaje culminado: max_epoch alcanzado\n\n");
         end
     end
+    graficarW();
 end
 
+function [W, b] = newValues(W, b, P, e, dato)
+    [filas, columnas] = size(W);
+    for i = 1:columnas
+        W(1, i) = W(1, i) + e*P(dato, i);
+    end
+    b = b + e;
+end
 
+function saveW(W)
+    filename = "perceptron_w.txt";
+    if isfile(filename)
+        dlmwrite(filename, W, '-append', 'delimiter', '\t', 'roffset', 1);
+    else
+        dlmwrite(filename, W, 'delimiter', '\t', 'roffset', 1);
+    end
+end
 
+function saveB(b)
+    filename = "perceptron_b.txt";
+    if isfile(filename)
+        dlmwrite(filename, b, '-append', 'delimiter', '\t', 'roffset', 1);
+    else
+        dlmwrite(filename, b, 'delimiter', '\t', 'roffset', 1);
+    end
+end
 
+function graficarW()
+    W = dlmread("perceptron_w.txt");
+    b = dlmread("perceptron_b.txt");
+    [menor, mayor] = buscarLimites();
+    plot( W );
+    hold on
+    plot( b, 's-m','MarkerSize', 6 );
+    % Rango para mayor apreciacion de resultados
+    axis([0 6 (menor-1) (mayor+1)]);
+    fclose('all');
+end
 
-
-
-
-
-
-
-
-
-
-
-
-
+function [menor, mayor] = buscarLimites()
+    W = dlmread("perceptron_w.txt");
+    b = dlmread("perceptron_b.txt");
+    [filas, columnas] = size(W);
+    menor = 99;
+    mayor = -1;
+    for i = 1:filas
+        for j = 1:columnas
+            if mayor < W(i,j)
+                mayor = W(i,j);
+            end
+            if menor > W(i,j)
+                menor = W(i,j);
+            end
+        end
+    end
+    for k = 1:filas
+        if mayor < b(k,1)
+            mayor = b(k,1);
+        end
+        if menor > b(k,1)
+            menor = b(k,1);
+        end
+    end
+end

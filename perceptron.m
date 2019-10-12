@@ -1,3 +1,13 @@
+% 
+% PERCEPTRON
+% 
+% Para usar este algoritmo se debe proporcionar un archivo con el nombre de
+% perceptron_w.txt y que tenga la siguiente estructura
+%
+% W traspuesta
+% targets traspuesta uno debajo de otro
+% max_epoch
+% 
 function perceptron()
     fprintf(1, "------------------------------------- \n");
     fprintf(1, "\x7c             Perceptron             \x7c\n");
@@ -7,7 +17,7 @@ end
 
 function init()
     cleanFolder();
-    [P, T, max_epoch] = leerArchivo();
+    [P, T, max_epoch] = readValuesFile();
     procesar(P, T, max_epoch);
     % procesar nuevamente
     resp = input("¿Desea repetir el entrenamiento? SI/NO:", 's');
@@ -30,24 +40,49 @@ function cleanFolder()
     end
 end
 
-function [P, T, max_epoch] = leerArchivo()
+function [P, T, max_epoch] = readValuesFile()
     valores = dlmread("perceptron_val.txt");
     [filas, columnas] = size(valores);
     j = 1;
+    % nro_targets nos dirá cuantas clases debemos clasificar y a partir 
+    % de esto obtendremos s
+    nro_targets = 1;
+    s = 0;
+    t_aux = zeros((filas-1)/2, columnas);
     
     % P
     for i = 1:((filas - 1)/2)
         P(i, :) = valores(i,:);
     end
     
-    % targets
+    % TARGETS
     for i = (filas+1)/2:(filas-1)
-        T(j, 1) = valores(i, 1);
+        t_aux(j) = valores(i);
         j = j + 1;
+    end
+    % asumiendo que los targets iguales estan uno tras otro
+    for i = 2:(filas-1)/2
+        if t_aux(i) ~= t_aux(i-1)
+            nro_targets = nro_targets + 1;
+        end
+    end
+    % calculamos s
+    % s nos ayuda a saber la dimension de los targets sx1
+    s = calcularS( nro_targets );
+    for i = 1:( (filas-1)/2 )
+        for k = 1:s
+            T(i, k) = t_aux(i, k);
+        end
     end
     
     % max_epoch
     max_epoch = valores(filas, 1);
+end
+
+function s = calcularS(nro_targets)
+    % 2^s = nro_clases => s = log2(nro_clases)
+    s = ceil(log2(nro_targets));
+    fprintf(1, "S = %d\n\n", s);
 end
 
 function procesar(P, T, max_epoch)
@@ -90,10 +125,12 @@ function procesar(P, T, max_epoch)
             if n >= 0
                 a = 1;
             end
+            
             % calculo del error
             e(1, j) = T(j, 1) - a;
+            
             % nuevos valores para W y b
-            [W, b] = calcularNuevosValores(W, b, P, e(1, j), j);
+            [W, b] = setNewValues(W, b, P, e(1, j), j);
             fprintf(1, "\tError = %d\n\n", e(1, j));
         end
         % Verificar que el error de cada iteracion es 0
@@ -114,10 +151,10 @@ function procesar(P, T, max_epoch)
             fprintf(1, "Aprendizaje culminado: max_epoch alcanzado\n\n");
         end
     end
-    graficar();
+    plotValues();
 end
 
-function [W, b] = calcularNuevosValores(W, b, P, e, dato)
+function [W, b] = setNewValues(W, b, P, e, dato)
     [filas, columnas] = size(W);
     for i = 1:columnas
         W(1, i) = W(1, i) + e*P(dato, i);
@@ -143,10 +180,10 @@ function saveB(b)
     end
 end
 
-function graficar()
+function plotValues()
     W = dlmread("perceptron_w.txt");
     b = dlmread("perceptron_b.txt");
-    [x_max, y_min, y_max] = buscarLimites(); 
+    [x_max, y_min, y_max] = findLimits(); 
     plot( W );
     hold on
     plot( b, 's-m','MarkerSize', 6 );
@@ -155,7 +192,7 @@ function graficar()
     fclose('all');
 end
 
-function [x_max, y_min, y_max] = buscarLimites()
+function [x_max, y_min, y_max] = findLimits()
     W = dlmread("perceptron_w.txt");
     b = dlmread("perceptron_b.txt");
     [filas, columnas] = size(W);

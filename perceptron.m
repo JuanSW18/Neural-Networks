@@ -2,9 +2,20 @@ function perceptron()
     fprintf(1, "------------------------------------- \n");
     fprintf(1, "\x7c             Perceptron             \x7c\n");
     fprintf(1, "------------------------------------- \n");
+    init();
+end
+
+function init()
     cleanFolder();
     [P, T, max_epoch] = leerArchivo();
     procesar(P, T, max_epoch);
+    % procesar nuevamente
+    resp = input("¿Desea repetir el entrenamiento? SI/NO:", 's');
+    if resp == "SI" || resp == "si"
+        init();
+    else
+        fprintf(1, "ADIOS\n");
+    end
 end
 
 function cleanFolder()
@@ -23,24 +34,38 @@ function [P, T, max_epoch] = leerArchivo()
     valores = dlmread("perceptron_val.txt");
     [filas, columnas] = size(valores);
     j = 1;
+    
+    % P
     for i = 1:((filas - 1)/2)
         P(i, :) = valores(i,:);
     end
+    
+    % targets
     for i = (filas+1)/2:(filas-1)
         T(j, 1) = valores(i, 1);
         j = j + 1;
     end
+    
+    % max_epoch
     max_epoch = valores(filas, 1);
 end
 
 function procesar(P, T, max_epoch)
     [filas, columnas] = size(P);
-    % Valores aleatorios para W y b
+    % VALORES ALEATORIOS PARA W y b
+    %
     % formula para nros aleatorios en un rango [a, b]
     % r = a + (b-a)*rand(N,1)
     W = -2 + (2+2)*rand(1, columnas);
     b = -5 + (5+5)*rand(1);
+    
+    % VARIABLES PARA CALCULAR EL ERROR
+    %
+    % e es una matriz para calcular los errores de cada iteracion durante 1
+    % epoca
     e = zeros(1, filas);
+    % si la suma de errores durante una epoca es cero entonces los
+    % elementos estan clasificados
     sum_e = 0;
     
     for i = 1:max_epoch
@@ -59,8 +84,9 @@ function procesar(P, T, max_epoch)
             end
             % sumamos el bias
             n = n + b;
-            fprintf(1, "\tn = %d\n\n", n);
-            % hardlim
+            %%fprintf(1, "\tn = %d\n\n", n);
+            
+            % HARDLIM
             if n >= 0
                 a = 1;
             end
@@ -120,7 +146,7 @@ end
 function graficar()
     W = dlmread("perceptron_w.txt");
     b = dlmread("perceptron_b.txt");
-    [x_max, y_min, y_max] = buscarLimites();
+    [x_max, y_min, y_max] = buscarLimites(); 
     plot( W );
     hold on
     plot( b, 's-m','MarkerSize', 6 );

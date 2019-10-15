@@ -41,7 +41,7 @@ function cleanFolder()
 end
 
 function [S, P, T, max_epoch] = readValuesFromFile()
-    valores = dlmread("perceptron_val2.txt");
+    valores = dlmread("perceptron_val.txt");
     [filas, columnas] = size(valores);
     j = 1;
     % nro_targets nos dirá cuantas clases debemos clasificar y a partir 
@@ -128,9 +128,9 @@ function startLearning(S, P, T, max_epoch)
         for j = 1:filas
             fprintf(1, "iteracion %d\n", j);
 %           disp( "   W     " );
-%           disp( W );
+            %disp( W );
 %           disp( "   b     " );
-%           disp( b );
+            %disp( b );
             
             % guardamos los valores de W y b
             saveW( W );
@@ -193,7 +193,7 @@ function startLearning(S, P, T, max_epoch)
         if i == max_epoch && ( sum_e/S ) == filas
             fprintf(1, "Aprendizaje culminado: datos del conjunto de entrenamiento clasificados\n\n");
         else
-            fprintf(1, "Aprendizaje culminado: max_epoch alcanzado\n\n");
+            fprintf(1, "Aprendizaje no culminado: max_epoch alcanzado\n\n");
         end
     end
     plotMultiValues(S)
@@ -252,6 +252,8 @@ function plotMultiValues(S)
         plot( W );
         hold on
         plot( b, 's-m', 'DisplayName','bias' );
+        line(xlim(), [0,0], 'LineWidth', 0.5, 'Color', 'k');
+        grid on;
         legend;
         % Rango para mayor apreciacion de resultados
         axis([0 (x_max+2) (y_min-0.5) (y_max+0.5)]);
@@ -272,9 +274,12 @@ function plotMultiValues(S)
             plot( b, 's-m', 'DisplayName','bias' );
             hold on
         end
+        line(xlim(), [0,0], 'LineWidth', 0.5, 'Color', 'k');
+        grid on;
         legend;
         % Rango para mayor apreciacion de resultados
         axis([0 (x_max+2) (y_min-0.5) (y_max+0.5)]);
+        
     end
     fclose('all');
 end

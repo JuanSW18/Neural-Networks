@@ -1,0 +1,7 @@
+%
+% ADALINE
+%
+function adaline()
+    
+end
+

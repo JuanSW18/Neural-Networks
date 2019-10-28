@@ -245,6 +245,7 @@ function saveMultiB(b, S)
 end
 
 function plotMultiValues(S)
+    Y = plotFrontier(S);
     if S == 1
         W = dlmread("perceptron_w.txt");
         b = dlmread("perceptron_b.txt");
@@ -252,7 +253,6 @@ function plotMultiValues(S)
         plot( W );
         hold on
         plot( b, 's-m', 'DisplayName','bias' );
-        line(xlim(), [0,0], 'LineWidth', 0.5, 'Color', 'k');
         grid on;
         legend;
         % Rango para mayor apreciacion de resultados
@@ -274,13 +274,12 @@ function plotMultiValues(S)
             plot( b, 's-m', 'DisplayName','bias' );
             hold on
         end
-        line(xlim(), [0,0], 'LineWidth', 0.5, 'Color', 'k');
         grid on;
         legend;
         % Rango para mayor apreciacion de resultados
         axis([0 (x_max+2) (y_min-0.5) (y_max+0.5)]);
-        
     end
+    plot( Y );
     fclose('all');
 end
 
@@ -313,5 +312,23 @@ function [x_max, y_min, y_max] = findLimitsInAllFiles(S)
                 y_min = b(k,1);
             end
         end
+    end
+end
+
+function Y = plotFrontier(S)
+    W = dlmread("perceptron_w.txt");
+    b = dlmread("perceptron_b.txt");
+    [filas, columnas] = size(W);
+    m1 = (-1)*( W(filas, 2)/ W(filas, 1) );
+    m2 = (-1)/m1;
+    if S == 1
+       last_w = W(filas, :);
+       last_b = b(filas, :);
+       p = (-1)*(last_w\last_b);
+       b = m2*p(2,1) - p(1,1);
+       x = -2:6;
+       Y = m2*x + b;
+    else
+        
     end
 end

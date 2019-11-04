@@ -17,6 +17,7 @@ function adaline()
     Eepoch = input("Ingrese el valor de Eepoch: ");
     alfa = input("Ingrese el valor del factor de aprendizaje: ");
     modo = input("Ingrese R(Regresor) o C(Clasificador) segun el tipo de problema: ", 's');
+    
     if modo == "r" || modo == "R"
         fprintf(1, "Empezando regresion ...\n");
         initRegression(P, T, epochmax, Eepoch, alfa);
@@ -33,8 +34,8 @@ end
 
 % Leer archivos para el dataset
 function [P, T] = readValuesFromFiles()
-    P = dlmread("p_reg.txt");
-    T = dlmread("targets_reg.txt");
+    P = dlmread("p_reg12.txt");
+    T = dlmread("targets_reg12.txt");
 end
 
 % Calcular el numero de clases
@@ -98,8 +99,10 @@ function initClasification(P, T, epochmax, Eepoch, alfa)
         % Arreglo de errores
         a_error = zeros( columnas, filas );
         for j = 1:filas
+            
             disp(W);
             disp(b);
+            
             % cada p esta escrito de forma traspuesta en el archivo
             % por lo que debemos aplicar la traspuesta
             p = P(j, :)';
@@ -108,11 +111,15 @@ function initClasification(P, T, epochmax, Eepoch, alfa)
             
             % CALCULO DEL ERROR
             a_error(:, j) = ( T(j, :)' - a );
+            
             fprintf(1, "Error:\n");
             disp(a_error(:, j));
+            
             % CALCULO DE NUEVOS VALORES PARA W y b
             [W, b] = getNewValues(W, b, p, a_error(:, j), alfa);
+            
             fprintf(1, "-----------------------------------\n");
+            
         end
         EEPOCH = getEEPOCH(a_error);
         
@@ -145,6 +152,18 @@ function initClasification(P, T, epochmax, Eepoch, alfa)
             end
         end
     end
+    % GUARDAR VALORES DE W Y b
+    dlmwrite('valores_finales_RNA.txt', W, 'delimiter', '\t');
+    dlmwrite('valores_finales_RNA.txt', b, 'delimiter', '\t', '-append');
+    
+    fprintf(1, "EEPOCH = \n");
+    disp(a_EEPOCH(:, i));
+    
+    fprintf(1, "W = \n");
+    disp(W);
+    
+    fprintf(1, "b = \n");
+    disp(b);
 end
 
 function W = getNewW(W_ant, p, e, alfa)
@@ -154,7 +173,7 @@ end
 function initRegression(P, T, epochmax, Eepoch, alfa)
     [filas, columnas] = size(P);
     W = -1 + ( 1 + 1 )*rand( 1, columnas );
-    W = [0.84 0.39 0.78];
+    % W = [0.84 0.39 0.78];
     % Arreglo de EEPOCH's
     a_EEPOCH = [];
     
@@ -164,8 +183,8 @@ function initRegression(P, T, epochmax, Eepoch, alfa)
         % Arreglo de errores
         a_error = zeros( 1, filas );
         for j = 1:filas
-            fprintf(1, "\t d%d\n", j);
-            disp(W);
+%             fprintf(1, "\t d%d\n", j);
+%             disp(W);
             
             p = P(j,:)';
             n = W * p;
@@ -173,14 +192,14 @@ function initRegression(P, T, epochmax, Eepoch, alfa)
             
             % CALCULO DEL ERROR
             a_error(1,j) = ( T(j, 1) - a );
-            fprintf(1, "\tERROR=%.4f\n", a_error(1,j));
+%             fprintf(1, "\tERROR=%.4f\n", a_error(1,j));
             
             % CALCULO DEL NUEVO VALOR PARA W
             W = getNewW(W, p, a_error(1, j), alfa);
         end
         EEPOCH = getEEPOCH(a_error);
         
-        fprintf(1, "\tEEPOCH=%.4f\n\n", EEPOCH);
+%         fprintf(1, "\tEEPOCH=%.4f\n\n", EEPOCH);
         
         a_EEPOCH(:, i) = EEPOCH;
         
@@ -200,6 +219,14 @@ function initRegression(P, T, epochmax, Eepoch, alfa)
             end
         end
     end
+     % GUARDAR VALORES DE W Y b
+    dlmwrite('val_finales_RNA_reg.txt', W, 'delimiter', '\t');
+    
+    fprintf(1, "EEPOCH = \n");
+    disp(a_EEPOCH(:, i));
+    
+    fprintf(1, "W = \n");
+    disp(W);
 end
 
 

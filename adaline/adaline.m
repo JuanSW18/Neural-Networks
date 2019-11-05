@@ -35,8 +35,8 @@ end
 
 % Leer archivos para el dataset
 function [P, T] = readValuesFromFiles()
-    P = dlmread("p.txt");
-    T = dlmread("targets.txt");
+    P = dlmread("p_reg12.txt");
+    T = dlmread("targets_reg12.txt");
 end
 
 % Calcular el numero de clases
@@ -50,6 +50,9 @@ function S = calculateS(T)
         if ~isequal(f1_aux, f2_aux)
             classes_number = classes_number + 1;
         end
+    end
+    if classes_number == 1
+        classes_number = 2;
     end
     % 2^s = nro_clases => s = log2(nro_clases)
     S = ceil(log2(classes_number));
@@ -97,6 +100,7 @@ function initClasification(P, T, epochmax, Eepoch, alfa)
     % r = a + (b-a)*rand(N,1)
     [filas, columnas] = size(P);
     S = calculateS(T);
+    
     W = -1 + ( 1 + 1 )*rand( S, columnas );
     b = -1 + ( 1 + 1 )*rand( S, 1 );
     
@@ -110,38 +114,46 @@ function initClasification(P, T, epochmax, Eepoch, alfa)
     t = 1;
     % APRENDIZAJE
     for i = 1:epochmax
-        fprintf(1, "EPOCA %d\n", i);
         % Arreglo de errores
-        a_error = zeros( columnas, filas );
+        a_error = zeros( S, filas );
         for j = 1:filas
             % GUARDAMOS VALORES DE W y b
             aux = transformW(W);
+            
             a_W(:, t) = aux;
             a_b(:, t) = b;
             t = t + 1;
             
-            %disp(a_W);
             %disp(W);
-            %disp(a_b)
-            %sdisp(b);
+            %disp(b);
             
             % cada p esta escrito de forma traspuesta en el archivo
             % por lo que debemos aplicar la traspuesta
             p = P(j, :)';
+            
+            %fprintf(1, "p:\n");
+            %disp(p);
+            
             n = W * p + b;
+            
+            %fprintf(1, "n:\n");
+            %disp(n);
+            
             a = purelin(n);
             
+            %fprintf(1, "target:\n");
+            %disp(T(j, :)');
+            %fprintf(1, "a:\n");
+            %disp(a);
+            
             % CALCULO DEL ERROR
-            a_error(:, j) = ( T(j, :)' - a );
+            a_error(:, j) = T(j, :)' - a;
             
             %fprintf(1, "Error:\n");
             %disp(a_error(:, j));
             
             % CALCULO DE NUEVOS VALORES PARA W y b
             [W, b] = getNewValues(W, b, p, a_error(:, j), alfa);
-            
-            %fprintf(1, "-----------------------------------\n");
-            
         end
         EEPOCH = getEEPOCH(a_error);
         
@@ -153,19 +165,20 @@ function initClasification(P, T, epochmax, Eepoch, alfa)
         
         
         % VERIFICANDO SI EEPOCH ES CERO
+        [f_EEPOCH, c_EEPOCH] = size(EEPOCH);
         suma_EEPOCH = 0;
-        for n = 1: columnas
+        for n = 1: c_EEPOCH
             suma_EEPOCH = suma_EEPOCH + ( EEPOCH(n, 1) == 0);
         end
-        if suma_EEPOCH == columnas
+        if suma_EEPOCH == c_EEPOCH
             fprintf(1, "Aprendizaje finalizado. EEPOCH = 0\n");
             break;
         else
             menores = 0;
-            for n = 1: columnas
+            for n = 1: c_EEPOCH
                 menores = menores + ( EEPOCH(n, 1) < Eepoch);
             end
-            if menores == columnas
+            if menores == c_EEPOCH
                 fprintf(1, "Aprendizaje finalizado. EEPOCH < Eepoch\n");
                 break;
             else
@@ -176,6 +189,7 @@ function initClasification(P, T, epochmax, Eepoch, alfa)
             end
         end
     end
+    fprintf(1, "N° de epocas realizadas: %d\n", i);
     % GUARDAR VALORES DE W Y b
     dlmwrite('valores_finales_RNA.txt', W, 'delimiter', '\t');
     dlmwrite('valores_finales_RNA.txt', b, 'delimiter', '\t', '-append');
@@ -208,7 +222,6 @@ function initRegression(P, T, epochmax, Eepoch, alfa)
     a_W = [];
     % APRENDIZAJE
     for i = 1:epochmax
-        fprintf(1, "EPOCA %d\n", i);
         % Arreglo de errores
         a_error = zeros( 1, filas );
         for j = 1:filas
@@ -249,6 +262,8 @@ function initRegression(P, T, epochmax, Eepoch, alfa)
             end
         end
     end
+    fprintf(1, "N° de epocas realizadas: %d\n", i);
+    
     % GUARDAR VALORES DE W Y b
     dlmwrite('val_finales_RNA_reg.txt', W, 'delimiter', '\t');
     

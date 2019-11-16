@@ -50,7 +50,7 @@ function Y = tabla_de_verdad(compuerta, n)
             Y(1, n+1) = 0;
         end
     end
-
+    disp(Y);
 end
 
 function procesar(dataset)

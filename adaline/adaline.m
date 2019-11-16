@@ -35,8 +35,8 @@ end
 
 % Leer archivos para el dataset
 function [P, T] = readValuesFromFiles()
-    P = dlmread("p_reg12.txt");
-    T = dlmread("targets_reg12.txt");
+    P = dlmread("p_xor.txt");
+    T = dlmread("targets_xor.txt");
 end
 
 % Calcular el numero de clases

@@ -75,7 +75,15 @@ function e = calculateError(t, a)
     e = t - a;
 end
 
-function startLearning(P, T, v1, v2, epochmax, epochval)
+function w = calculateW(w_old, p, e, alpha)
+    w = w_old + 2*alpha*e*p';
+end
+
+function b = calculateBias(b_old, e, alpha)
+    b = b_old + 2*alpha*e;
+end
+
+function startLearning(P, T, alpha, v1, v2, epochmax, epochval)
     % VALORES ALEATORIOS PARA CADA W y b
     % 
     % formula para nros aleatorios en un rango [a, b]
@@ -94,16 +102,25 @@ function startLearning(P, T, v1, v2, epochmax, epochval)
     for epoch_actual = 1:epochmax
         if epoch_actual~=epochval || mod(epoch_actual, epochval)~=0
             % EPOCA DE ENTRENAMIENTO
+            errores_iteracion = {};
             for nro_p = 1:nro_ps
                 p = P(nro_p, :)';
                 target = T(nro_p, :)';
                 for capa = 1:nro_capas(2)-1
-                    n = capas_w_b{1}.w * p + capas_w_b{1}.b;
+                    n = capas_w_b{capa}.w * p + capas_w_b{capa}.b;
                     a = calculateA(n, v2(capa));
                     p = [];
                     p = a;
                 end
                 e = calculateError(target, a);
+                errores_iteracion{nro_p} = e;
+                % CALCULO DE NUEVOS W y b
+                for j = 1:nro_capas(2)-1
+                    w_old = capas_w_b{j}.w;
+                    b_old = capas_w_b{j}.b;
+                    capas_w_b{j}.w = calculateW(w_old, p, e, alpha);
+                    capas_w_b{j}.b = calculateBias(w_old, e, alpha);
+                end
             end
         else
             % EPOCA DE VALIDACION

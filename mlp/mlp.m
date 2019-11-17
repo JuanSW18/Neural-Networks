@@ -41,23 +41,70 @@ function [epochmax, eepoch, epochval, numval] = criterias()
     numval = input("Ingrese numval: ");
 end
 
-function startLearning(v1, v2, epochmax, epochval)
+function a = calculateA(n, ft)
+    [filas, columnas] = size(n);
+    a = zeros(filas, columnas);
+    switch ft
+        case 1
+            % purelin
+            for i = 1:filas
+                for j = 1:columnas
+                    a(i, j) = purelin( n(i, j) );
+                end
+            end
+        case 2
+            % logsig
+            for i = 1:filas
+                for j = 1:columnas
+                    a(i, j) = logsig( n(i, j) );
+                end
+            end
+        case 3
+            % tansig
+            for i = 1:filas
+                for j = 1:columnas
+                    a(i, j) = tansig( n(i, j) );
+                end
+            end
+    end
+end
+
+function e = calculateError(t, a)
+    [filas, columnas] = size(t);
+    e = zeros(filas, columnas);
+    e = t - a;
+end
+
+function startLearning(P, T, v1, v2, epochmax, epochval)
     % VALORES ALEATORIOS PARA CADA W y b
     % 
     % formula para nros aleatorios en un rango [a, b]
     % r = a + (b-a)*rand(N,1)
-    tam = size(v1);
-    capas_w_b = [LayerMLP, LayerMLP, LayerMLP];
-    for i = 1:tam+2
+    nro_ps = size(P);
+    
+    nro_capas = size(v1);
+    capas_w_b = {};
+    for j = 1:nro_capas(2)-1
         objeto = LayerMLP;
-        objeto.w =  -1 + 2*rand( v1(i+1), v1(i) );
-        objeto.b = -1 + 2*rand( v1(i+1), 1 );
-        capas_w_b(i) = objeto;
+        objeto.w =  -1 + 2*rand( v1(j+1), v1(j) );
+        objeto.b = -1 + 2*rand( v1(j+1), 1 );
+        capas_w_b{j} = objeto;
     end
     
     for epoch_actual = 1:epochmax
         if epoch_actual~=epochval || mod(epoch_actual, epochval)~=0
             % EPOCA DE ENTRENAMIENTO
+            for nro_p = 1:nro_ps
+                p = P(nro_p, :)';
+                target = T(nro_p, :)';
+                for capa = 1:nro_capas(2)-1
+                    n = capas_w_b{1}.w * p + capas_w_b{1}.b;
+                    a = calculateA(n, v2(capa));
+                    p = [];
+                    p = a;
+                end
+                e = calculateError(target, a);
+            end
         else
             % EPOCA DE VALIDACION
         end

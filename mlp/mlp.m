@@ -2,21 +2,21 @@ function mlp()
     fprintf(1, "------------------------------------- \n");
     fprintf(1, "\x7c                MLP                \x7c\n");
     fprintf(1, "------------------------------------- \n");
-    readLayers();
+    leerCapas();
 end
 
-function [P, T] = readValuesFromFiles()
+function [P, T] = leerValoresDeArchivos()
     P = dlmread("p.txt");
     T = dlmread("targets.txt");
 end
 
-function [a, b] = readRange()
+function [a, b] = leerRango()
     fprintf(1, "Rango de la señal\n");
     a = input("Ingrese el limite inferior: ");
     b = input("Ingrese el limite superior: ");
 end
 
-function [v1, v2] = readLayers()
+function [v1, v2] = leerCapas()
     capas = input("Ingrese el numero de capas de la red (max. 3): ");
     v1 = [1];
     for i = 1:capas
@@ -28,12 +28,12 @@ function [v1, v2] = readLayers()
     v2(i+1) = 1;
 end
 
-function alfa = readAlpha()
+function alfa = leerAlpha()
     % Recomendacion: usar alfa = [0.1, 1x10^-4]
     alfa = input("Ingrese el valor de alfa: ");
 end
 
-function [epochmax, eepoch, epochval, numval] = criterias()
+function [epochmax, eepoch, epochval, numval] = leerValoresParaCriterios()
     % epochval => 10% de epochmax
     epochmax = input("Ingrese el numero maximo de epocas: ");
     eepoch = input("Ingrese eepoch: ");
@@ -41,7 +41,7 @@ function [epochmax, eepoch, epochval, numval] = criterias()
     numval = input("Ingrese numval: ");
 end
 
-function a = calculateA(n, ft)
+function a = calcularA(n, ft)
     [filas, columnas] = size(n);
     a = zeros(filas, columnas);
     switch ft
@@ -69,21 +69,61 @@ function a = calculateA(n, ft)
     end
 end
 
-function e = calculateError(t, a)
+function e = calcularError(t, a)
     [filas, columnas] = size(t);
-    e = zeros(filas, columnas);
     e = t - a;
 end
 
-function w = calculateW(w_old, p, e, alpha)
-    w = w_old + 2*alpha*e*p';
+function F = calcularFs(v1, v2, valores_a)
+    % valores_a = {a0=p, a1, a2, a3}
+    F = {};    
+    nro_capas = size(v1);
+    for i = 2:nro_capas
+        f = zeros(v1(i), v1(i));
+        switch v2(i-1)
+            case 1
+                % purelin
+                for j = 1:v1(i)
+                    f(j, j) = 1;
+                end
+            case 2
+                % logsig
+                 for j = 1:v1(i)
+                    f(j, j) = valores_a{i}(j, 1)*(1 - valores_a{i}(j, 1));
+                end
+            case 3
+                % tansig
+                 for j = 1:v1(i)
+                    f(j, j) = 1 - valores_a{i}(j, 1)*valores_a{i}(j, 1);
+                end
+        end   
+    end 
 end
 
-function b = calculateBias(b_old, e, alpha)
-    b = b_old + 2*alpha*e;
+function S = calcularSensitividades(nro_capas, F, e, capas_w_b)
+    S = {};
+    for n = 1:nro_capas
+        S{n} = 0;
+    end
+    S{nro_capas} = -2*F(nro_capas)*e;
+    for i = nro_capas-1:-1:1
+        S{i} = F(i)*(capas_w_b{i+1}.w)'*S{i+1};
+    end
 end
 
-function startLearning(P, T, alpha, v1, v2, epochmax, epochval)
+function w = calcularNuevoW(nro_capas, w_old, alpha, S, arreglo_a)
+    for i = 2:nro_capas
+        w = w_old - alpha*S{i}*arreglo_a{i-1};
+    end
+end
+
+function b = calcularNuevoBias(nro_capas, b_old, alpha, S)
+    for i = 1:nro_capas
+        b = b_old - alpha*S{i};
+    end
+end
+
+function iniciarAprendizaje(P, T, alpha, v1, v2, epochmax, epochval)
     % VALORES ALEATORIOS PARA CADA W y b
     % 
     % formula para nros aleatorios en un rango [a, b]
@@ -102,31 +142,60 @@ function startLearning(P, T, alpha, v1, v2, epochmax, epochval)
     for epoch_actual = 1:epochmax
         if epoch_actual~=epochval || mod(epoch_actual, epochval)~=0
             % EPOCA DE ENTRENAMIENTO
+            arreglo_a = {};
             errores_iteracion = {};
+            % VALIDACION DE P
             for nro_p = 1:nro_ps
                 p = P(nro_p, :)';
                 target = T(nro_p, :)';
+                % CALCULO DE 'a' CAPA POR CAPA
+                arreglo_a{1} = p;
                 for capa = 1:nro_capas(2)-1
                     n = capas_w_b{capa}.w * p + capas_w_b{capa}.b;
-                    a = calculateA(n, v2(capa));
+                    a = calcularA(n, v2(capa));
                     p = [];
                     p = a;
+                    
+                    % GUARDAMOS EL VALOR FINAL DE a PARA CADA CAPA
+                    arreglo_a{capa+1} = a;
                 end
-                e = calculateError(target, a);
+                % fin del calculo de 'a'
+                e = calcularError(target, a);
+                
+                % GUARDAMOS EL ERROR DE LA ITERACION (ENTRENAMIENTO)
                 errores_iteracion{nro_p} = e;
+                
                 % CALCULO DE NUEVOS W y b
+                F = calcularFs(v1, v2, a);
+                S = calcularSensitividades(nro_capas, F, e, capas_w_b);
                 for j = 1:nro_capas(2)-1
                     w_old = capas_w_b{j}.w;
                     b_old = capas_w_b{j}.b;
-                    capas_w_b{j}.w = calculateW(w_old, p, e, alpha);
-                    capas_w_b{j}.b = calculateBias(w_old, e, alpha);
+                    capas_w_b{j}.w = calcularNuevoW(nro_capas, w_old, alpha, S, arreglo_a);
+                    capas_w_b{j}.b = calcularNuevoBias(nro_capas, b_old, alpha, S);
                 end
+                % fin del CALCULO DE NUEVOS W y b
+                
             end
+            % fin de VALIDACION DE TODOS LOS P's
+            
+            % fin de EPOCA DE ENTRENAMIENTO
         else
             % EPOCA DE VALIDACION
+            
+            
+            % fin de EPOCA DE VALIDACION
         end
     end
 end
+
+% CALCULO DE NUEVOS W y b
+%                 for j = 1:nro_capas(2)-1
+%                     w_old = capas_w_b{j}.w;
+%                     b_old = capas_w_b{j}.b;
+%                     capas_w_b{j}.w = calculateNewW(w_old, p, e, alpha);
+%                     capas_w_b{j}.b = calculateNewBias(w_old, e, alpha);
+%                 end
 
 
 

@@ -3,6 +3,7 @@ function mlp()
     fprintf(1, "\x7c                MLP                \x7c\n");
     fprintf(1, "------------------------------------- \n");
     [P, T] = leerValoresDeArchivos();
+    [P_train, T_train, P_val, T_val, P_test, T_test] = separarDatos(P, T);
     %[a, b] = leerRango();
     a = -2;
     b = 2;
@@ -16,12 +17,66 @@ function mlp()
     eepoch = 0.001;
     epochval = 10;
     numval = 5;
-    iniciarAprendizaje(P, T, alpha, v1, v2, epochmax, epochval);
+    iniciarAprendizaje(P_train, T_train, P_val, T_val, P_test, T_test, alpha, v1, v2, epochmax, epochval);
 end
 
 function [P, T] = leerValoresDeArchivos()
     P = dlmread("p.txt");
     T = dlmread("targets.txt");
+end
+
+function [P_train, T_train, P_val, T_val, P_test, T_test] = separarDatos(P, T)
+    fprintf(1, "Elija como deben estar separados los datos\n");
+    fprintf(1, "1.- 70%% train - 15%% val - 15%% test\n");
+    fprintf(1, "2.- 80%% train - 10%% val - 10%% test\n");
+    opcion = input("Opcion: ");
+    datos = size(P);
+    fprintf(1, "cantidad de datos = %d\n", datos(1));
+    P_train = [];
+    T_train = [];
+    P_val = [];
+    T_val= [];
+    P_test = [];
+    T_test = [];
+    if opcion == 1
+        cant_train = round( datos(1)*0.7 );
+        cant_val_test = round( datos(1)*0.15 );
+        fprintf(1, "datos train = %d\n", cant_train);
+        fprintf(1, "datos cal = %d\n", cant_val_test);
+        indices_train = randperm( datos(1), cant_train );
+        indices_val = randperm( datos(1), cant_val_test );
+        indices_test = randperm( datos(1), cant_val_test );
+        % escogemos los datos de entrenamiento
+        for i = 1:cant_train
+            P_train(i,1) = P( indices_train(i) );
+            T_train(i,1) = T( indices_train(i) );
+        end
+        % escogemos los datos de val y test
+        for i = 1:cant_val_test
+            P_val(i,1) = P( indices_val(i) );
+            T_val(i,1) = T( indices_val(i) );
+            P_test(i,1) = P( indices_test(i) );
+            T_test(i,1) = T( indices_test(i) );
+        end
+    else
+        cant_train = round( datos(1)*0.8 );
+        cant_val_test = round( datos(1)*0.1 );
+        indices_train = randperm( datos(1), cant_train );
+        indices_val = randperm( datos(1), cant_val_test );
+        indices_test = randperm( datos(1), cant_val_test );
+        % escogemos los datos de entrenamiento
+        for i = 1:cant_train
+            P_train = P( indices_train(i) );
+            T_train = T( indices_train(i) );
+        end
+        % escogemos los datos de val y test
+        for i = 1:cant_val_test
+            P_val = P( indices_val(i) );
+            T_val = T( indices_val(i) );
+            P_test = P( indices_test(i) );
+            T_test = T( indices_test(i) );
+        end
+    end
 end
 
 function [a, b] = leerRango()
@@ -142,13 +197,22 @@ function b = calcularNuevoBias(capa, b_old, alpha, S)
 %     end
 end
 
-function iniciarAprendizaje(P, T, alpha, v1, v2, epochmax, epochval)
+function EEPOCH = calcularErrorEpoca(nro_p, errores_iteracion)
+    EEPOCH = zeros(nro_p, 1);
+    for i = 1:nro_p
+        EEPOCH = EEPOCH + errores_iteracion{i};
+    end
+    EEPOCH = abs(EEPOCH)/4;
+end
+
+function iniciarAprendizaje(P_train, T_train, P_val, T_val, P_test, T_test, alpha, v1, v2, epochmax, epochval)
     % VALORES ALEATORIOS PARA CADA W y b
     % 
     % formula para nros aleatorios en un rango [a, b]
     % r = a + (b-a)*rand(N,1)
-    nro_ps = size(P);
-    
+    nro_ps = size(P_train);
+    fprintf(1, "nro de P's %d\n", nro_ps(2));
+    disp(P_train);
     nro_capas = size(v1);
     capas_w_b = {};
     for c = 1:nro_capas(2)-1
@@ -158,32 +222,25 @@ function iniciarAprendizaje(P, T, alpha, v1, v2, epochmax, epochval)
         capas_w_b{c} = objeto;
     end
     
+    % INICIO DE ENTRENAMIENTO
     for epoch_actual = 1:epochmax
+        EEPOCH = [];
         if epoch_actual~=epochval || mod(epoch_actual, epochval)~=0
             % EPOCA DE ENTRENAMIENTO
             arreglo_a = {};
             errores_iteracion = {};
             % VALIDACION DE P
             for nro_p = 1:nro_ps
-                p = P(nro_p, :)';
-                target = T(nro_p, :)';
+                p = P_train(nro_p, :)';
+                target = T_train(nro_p, :)';
                 % CALCULO DE 'a' CAPA POR CAPA
                 arreglo_a{1} = p;
                 fprintf(1, "P %d\n", nro_p);
-                for capa = 1:nro_capas(2)-1
-%                     fprintf(1, "CAPA %d\n", capa);
-%                     fprintf(1, "W\n");
-%                     disp(capas_w_b{capa}.w);
-%                     fprintf(1, "p\n");
-%                     disp(p);
-%                     fprintf(1, "bias\n");
-%                     disp(capas_w_b{capa}.b);
+                for capa = 1:nro_capas(2)-1;
                     n = (capas_w_b{capa}.w)*p + capas_w_b{capa}.b;
                     a = calcularA(n, v2(capa));
                     p = [];
                     p = a;
-%                     fprintf(1, "a\n");
-%                     disp(a);
                     % GUARDAMOS EL VALOR FINAL DE a PARA CADA CAPA
                     arreglo_a{capa+1} = a;
                 end
@@ -196,24 +253,17 @@ function iniciarAprendizaje(P, T, alpha, v1, v2, epochmax, epochval)
                 % CALCULO DE NUEVOS W y b
                 F = calcularFs(v1, v2, arreglo_a);
                 S = calcularSensitividades(nro_capas, F, e, capas_w_b);
-%                 fprintf(1, "Nuevos w y b\n");
                 for j = 1:nro_capas(2)-1
                     w_old = capas_w_b{j}.w;
                     b_old = capas_w_b{j}.b;
                     capas_w_b{j}.w = calcularNuevoW(j, w_old, alpha, S, arreglo_a);
                     capas_w_b{j}.b = calcularNuevoBias(j, b_old, alpha, S);
-%                     fprintf(1, "j => %d\n", j);
-%                     fprintf(1, "old values\n");
-%                     disp(w_old);
-%                     disp(b_old);
-%                     fprintf(1, "new values\n");
-%                     disp(capas_w_b{j}.w);
-%                     disp(capas_w_b{j}.b);
                 end
                 % fin del CALCULO DE NUEVOS W y b
                 
             end
             % fin de VALIDACION DE TODOS LOS P's
+            EEPOCH = calcularErrorEpoca(nro_p, errores_iteracion);
             
             % fin de EPOCA DE ENTRENAMIENTO
         else
@@ -223,6 +273,7 @@ function iniciarAprendizaje(P, T, alpha, v1, v2, epochmax, epochval)
             % fin de EPOCA DE VALIDACION
         end
     end
+    % fin de ENTRENAMIENTO
 end
 
 

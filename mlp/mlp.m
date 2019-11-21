@@ -266,7 +266,7 @@ function iniciarAprendizaje(P_train, T_train, P_val, T_val, P_test, T_test, alph
             arreglo_a = {};
             errores_iteracion = {};
             % VALIDACION DE P
-            for nro_p = 1:nro_ps_train
+            for nro_p = 1:nro_ps_train(1)
                 p = P_train(nro_p, :)';
                 target = T_train(nro_p, :)';
                 % CALCULO DE 'a' CAPA POR CAPA
@@ -306,7 +306,7 @@ function iniciarAprendizaje(P_train, T_train, P_val, T_val, P_test, T_test, alph
             % EPOCA DE VALIDACION
             val_errores_iteracion = {};
             % VALIDACION DE P
-            for nro_p_val = 1:nro_ps_val
+            for nro_p_val = 1:nro_ps_val(1)
                 p = P_val(nro_p_val, :)';
                 target = T_val(nro_p_val, :)';
                 
@@ -356,7 +356,30 @@ function iniciarAprendizaje(P_train, T_train, P_val, T_val, P_test, T_test, alph
     % fin de ENTRENAMIENTO
     
     % TEST
+    nro_ps_test = size(P_test);
+    test_errores_iteracion = {};
     
+    for i_test = 1:nro_ps_test(1)
+        p = P_val(i_test, :)';
+        target = T_val(i_test, :)';
+                
+        for capa = 1:nro_capas(2)-1
+            n = (capas_w_b{capa}.w)*p + capas_w_b{capa}.b;
+            a = calcularA(n, v2(capa));
+            p = [];
+            p = a;
+        end
+        % fin del calculo de 'a'
+        e = calcularError(target, a);
+        
+        % GUARDAMOS EL ERROR DE LA ITERACION (ENTRENAMIENTO)
+        test_errores_iteracion{i_test} = e;
+    end
+    
+    % error_test debe estar en el rango [1x10^-3, 1x10^-4]
+    error_test = calcularErrorEpoca(nro_ps_test, test_errores_iteracion);
+    fprintf(1, "ERROR_TEST = ");
+    disp(error_test);
     % fin del TEST
 end
 

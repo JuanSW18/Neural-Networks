@@ -17,7 +17,7 @@ function mlp()
     eepoch = 0.001;
     epochval = 10;
     numval = 5;
-    iniciarAprendizaje(P_train, T_train, P_val, T_val, alpha, v1, v2, epochmax, eepoch, epochval, numval);
+    iniciarAprendizaje(P_train, T_train, P_val, T_val, P_test, T_test, alpha, v1, v2, epochmax, eepoch, epochval, numval);
 end
 
 function [P, T] = leerValoresDeArchivos()
@@ -216,7 +216,26 @@ function cumple = comprobarEEPOCH(EEPOCH, eepoch)
     end
 end
 
-function iniciarAprendizaje(P_train, T_train, P_val, T_val, alpha, v1, v2, epochmax, eepoch, epochval, numval)
+function criterioAlcanzado = comprobarCF(epoch_actual, epochmax, EEPOCH, eepoch, nro_val, epochval)
+    criterioAlcanzado = 0;
+    if epoch_actual == epochmax
+        fprintf(1, "Fin del entrenamiento. EPOCHMAX alcanzado");
+        criterioAlcanzado = 1;
+    else
+        cumple = comprobarEEPOCH(EEPOCH, eepoch);
+        if cumple == 1
+            fprintf(1, "Fin del entrenamiento. Se cumplio eepoch");
+            criterioAlcanzado = 1;
+        else
+            if nro_val == epochval
+                fprintf(1, "Fin del entrenamiento. epochval alcanzado");
+                criterioAlcanzado = 1;
+            end
+        end
+    end
+end
+
+function iniciarAprendizaje(P_train, T_train, P_val, T_val, P_test, T_test, alpha, v1, v2, epochmax, eepoch, epochval, numval)
     % VALORES ALEATORIOS PARA CADA W y b
     % 
     % formula para nros aleatorios en un rango [a, b]
@@ -227,6 +246,7 @@ function iniciarAprendizaje(P_train, T_train, P_val, T_val, alpha, v1, v2, epoch
     val_errores = {};
     % cont_val incrementa si se verifica que val(k+1) > val(k)
     cont_val = 0;
+    % nro_val es el contador de epocas de validaciones realizadas
     nro_val = 1;
     
     nro_capas = size(v1);
@@ -280,7 +300,7 @@ function iniciarAprendizaje(P_train, T_train, P_val, T_val, alpha, v1, v2, epoch
             end
             % fin de VALIDACION DE TODOS LOS P's
             EEPOCH = calcularErrorEpoca(nro_ps, errores_iteracion);
-            cumple = comprobarEEPOCH(EEPOCH, eepoch);
+            %cumple = comprobarEEPOCH(EEPOCH, eepoch);
             % fin de EPOCA DE ENTRENAMIENTO
         else
             % EPOCA DE VALIDACION
@@ -309,23 +329,35 @@ function iniciarAprendizaje(P_train, T_train, P_val, T_val, alpha, v1, v2, epoch
             if nro_val >= 2
                 aux = val_errores{nro_val} > val_errores{nro_val-1};
                 suma = sum(aux);
-                if suma ~= 0
-                    
+                % si la suma es igual a nro_ps_val, entonces se cumple que
+                % val_errores{nro_val} > val_errores{nro_val-1}
+                if suma == nro_ps_val
+                    cont_val = cont_val + 1;
+                    if cont_val == numval
+                        fprintf(1, "Fin del entrenamiento. numval alcanzado");
+                        break;
+                    end
+                else
+                    cont_val = 0;
                 end
             end
-            
             nro_val = nro_val + 1;
-            
-            
-            
             % fin de EPOCA DE VALIDACION
         end
         
         % VERIFICAMOS SI SE CUMPLE ALGUN CRITERIO DE FINALIZACION
-        
+        flag = comprobarCF(epoch_actual, epochmax, EEPOCH, eepoch, nro_val, epochval);
+        if flag == 1
+            break;
+        end
+        % fin de la verificacion de criterio de finalizacion
         
     end
     % fin de ENTRENAMIENTO
+    
+    % TEST
+    
+    % fin del TEST
 end
 
 

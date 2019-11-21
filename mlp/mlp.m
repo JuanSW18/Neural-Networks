@@ -8,13 +8,13 @@ function mlp()
     a = -2;
     b = 2;
     %[v1, v2] = leerCapas();
-    v1 = [1 2 3 1];
+    v1 = [1 7 5 1];
     v2 = [2 3 1];
     %alpha = leerAlpha();
     alpha = 0.15;
     %[epochmax, eepoch, epochval, numval] = leerValoresParaCriterios();
-    epochmax = 15;
-    eepoch = 0.001;
+    epochmax = 100;
+    eepoch = 0.0001;
     epochval = 10;
     numval = 5;
     iniciarAprendizaje(P_train, T_train, P_val, T_val, P_test, T_test, alpha, v1, v2, epochmax, eepoch, epochval, numval);
@@ -42,7 +42,7 @@ function [P_train, T_train, P_val, T_val, P_test, T_test] = separarDatos(P, T)
         cant_train = round( datos(1)*0.7 );
         cant_val_test = round( datos(1)*0.15 );
         fprintf(1, "datos train = %d\n", cant_train);
-        fprintf(1, "datos cal = %d\n", cant_val_test);
+        fprintf(1, "datos val = %d\n", cant_val_test);
         indices_train = randperm( datos(1), cant_train );
         indices_val = randperm( datos(1), cant_val_test );
         indices_test = randperm( datos(1), cant_val_test );
@@ -61,6 +61,8 @@ function [P_train, T_train, P_val, T_val, P_test, T_test] = separarDatos(P, T)
     else
         cant_train = round( datos(1)*0.8 );
         cant_val_test = round( datos(1)*0.1 );
+        fprintf(1, "datos train = %d\n", cant_train);
+        fprintf(1, "datos val = %d\n", cant_val_test);
         indices_train = randperm( datos(1), cant_train );
         indices_val = randperm( datos(1), cant_val_test );
         indices_test = randperm( datos(1), cant_val_test );
@@ -71,10 +73,10 @@ function [P_train, T_train, P_val, T_val, P_test, T_test] = separarDatos(P, T)
         end
         % escogemos los datos de val y test
         for i = 1:cant_val_test
-            P_val = P( indices_val(i) );
-            T_val = T( indices_val(i) );
-            P_test = P( indices_test(i) );
-            T_test = T( indices_test(i) );
+            P_val(i,1) = P( indices_val(i) );
+            T_val(i,1) = T( indices_val(i) );
+            P_test(i,1) = P( indices_test(i) );
+            T_test(i,1) = T( indices_test(i) );
         end
     end
 end
@@ -202,7 +204,7 @@ function EEPOCH = calcularErrorEpoca(nro_ps, errores_iteracion)
     for i = 1:nro_ps
         EEPOCH = EEPOCH + errores_iteracion{i};
     end
-    EEPOCH = abs(EEPOCH)/4;
+    EEPOCH = abs(EEPOCH)/nro_ps;
 end
 
 function cumple = comprobarEEPOCH(EEPOCH, eepoch)
@@ -219,16 +221,16 @@ end
 function criterioAlcanzado = comprobarCF(epoch_actual, epochmax, EEPOCH, eepoch, nro_val, epochval)
     criterioAlcanzado = 0;
     if epoch_actual == epochmax
-        fprintf(1, "Fin del entrenamiento. EPOCHMAX alcanzado");
+        fprintf(1, "Fin del entrenamiento. EPOCHMAX alcanzado\n");
         criterioAlcanzado = 1;
     else
         cumple = comprobarEEPOCH(EEPOCH, eepoch);
         if cumple == 1
-            fprintf(1, "Fin del entrenamiento. Se cumplio eepoch");
+            fprintf(1, "Fin del entrenamiento. Se cumplio eepoch\n");
             criterioAlcanzado = 1;
         else
             if nro_val == epochval
-                fprintf(1, "Fin del entrenamiento. epochval alcanzado");
+                fprintf(1, "Fin del entrenamiento. epochval alcanzado\n");
                 criterioAlcanzado = 1;
             end
         end
@@ -261,7 +263,8 @@ function iniciarAprendizaje(P_train, T_train, P_val, T_val, P_test, T_test, alph
     % INICIO DE ENTRENAMIENTO
     for epoch_actual = 1:epochmax
         EEPOCH = [];
-        if epoch_actual~=epochval || mod(epoch_actual, epochval)~=0
+        if epoch_actual~=epochval && mod(epoch_actual, epochval)~=0
+            fprintf(1, "ENTRENEMIENTO = EPOCA %d\n", epoch_actual);
             % EPOCA DE ENTRENAMIENTO
             arreglo_a = {};
             errores_iteracion = {};
@@ -271,7 +274,6 @@ function iniciarAprendizaje(P_train, T_train, P_val, T_val, P_test, T_test, alph
                 target = T_train(nro_p, :)';
                 % CALCULO DE 'a' CAPA POR CAPA
                 arreglo_a{1} = p;
-                fprintf(1, "P %d\n", nro_p);
                 for capa = 1:nro_capas(2)-1
                     n = (capas_w_b{capa}.w)*p + capas_w_b{capa}.b;
                     a = calcularA(n, v2(capa));
@@ -299,11 +301,13 @@ function iniciarAprendizaje(P_train, T_train, P_val, T_val, P_test, T_test, alph
                 
             end
             % fin de VALIDACION DE TODOS LOS P's
-            EEPOCH = calcularErrorEpoca(nro_ps, errores_iteracion);
+            EEPOCH = calcularErrorEpoca(nro_ps_train(1), errores_iteracion);
             %cumple = comprobarEEPOCH(EEPOCH, eepoch);
             % fin de EPOCA DE ENTRENAMIENTO
+            fprintf(1, "ERROR DE ENTRENAMIENTO = %d\n", EEPOCH(1));
         else
             % EPOCA DE VALIDACION
+            fprintf(1, "VALIDACION = EPOCA %d\n", epoch_actual);
             val_errores_iteracion = {};
             % VALIDACION DE P
             for nro_p_val = 1:nro_ps_val(1)
@@ -317,13 +321,13 @@ function iniciarAprendizaje(P_train, T_train, P_val, T_val, P_test, T_test, alph
                     p = a;
                 end
                 % fin del calculo de 'a'
-                e = calcularError(target, a);
+                error_val = calcularError(target, a);
                 
                 % GUARDAMOS EL ERROR DE LA ITERACION (ENTRENAMIENTO)
-                val_errores_iteracion{nro_p_val} = e;
+                val_errores_iteracion{nro_p_val} = error_val;
             end
             % fin de VALIDACION DE TODOS LOS P's
-            EEPOCH = calcularErrorEpoca(nro_ps_val, val_errores_iteracion);
+            EEPOCH = calcularErrorEpoca(nro_ps_val(1), val_errores_iteracion);
             val_errores{nro_val} = EEPOCH;
             
             if nro_val >= 2
@@ -334,7 +338,7 @@ function iniciarAprendizaje(P_train, T_train, P_val, T_val, P_test, T_test, alph
                 if suma == nro_ps_val
                     cont_val = cont_val + 1;
                     if cont_val == numval
-                        fprintf(1, "Fin del entrenamiento. numval alcanzado");
+                        fprintf(1, "Fin del entrenamiento. numval alcanzado\n");
                         break;
                     end
                 else
@@ -343,6 +347,7 @@ function iniciarAprendizaje(P_train, T_train, P_val, T_val, P_test, T_test, alph
             end
             nro_val = nro_val + 1;
             % fin de EPOCA DE VALIDACION
+            fprintf(1, "ERROR DE VALIDACION = %d\n", EEPOCH(1));
         end
         
         % VERIFICAMOS SI SE CUMPLE ALGUN CRITERIO DE FINALIZACION
@@ -351,11 +356,10 @@ function iniciarAprendizaje(P_train, T_train, P_val, T_val, P_test, T_test, alph
             break;
         end
         % fin de la verificacion de criterio de finalizacion
-        
     end
     % fin de ENTRENAMIENTO
     
-    % TEST
+    % INICIO DEL TEST
     nro_ps_test = size(P_test);
     test_errores_iteracion = {};
     
@@ -370,17 +374,22 @@ function iniciarAprendizaje(P_train, T_train, P_val, T_val, P_test, T_test, alph
             p = a;
         end
         % fin del calculo de 'a'
-        e = calcularError(target, a);
+        e_p_test = calcularError(target, a);
         
         % GUARDAMOS EL ERROR DE LA ITERACION (ENTRENAMIENTO)
-        test_errores_iteracion{i_test} = e;
+        test_errores_iteracion{i_test} = e_p_test;
     end
     
     % error_test debe estar en el rango [1x10^-3, 1x10^-4]
-    error_test = calcularErrorEpoca(nro_ps_test, test_errores_iteracion);
-    fprintf(1, "ERROR_TEST = ");
-    disp(error_test);
+    error_test = calcularErrorEpoca(nro_ps_test(1), test_errores_iteracion);
+    fprintf(1, "ERROR_TEST = %d \n", error_test(1));
     % fin del TEST
+    objeto = LayerMLP;
+    for c = 1:nro_capas(2)-1
+        objeto = capas_w_b{c};
+        disp(objeto.w);
+        disp(objeto.b);
+    end
 end
 
 

@@ -17,7 +17,7 @@ function mlp()
     eepoch = 0.001;
     epochval = 10;
     numval = 5;
-    iniciarAprendizaje(P_train, T_train, P_val, T_val, P_test, T_test, alpha, v1, v2, epochmax, epochval);
+    iniciarAprendizaje(P_train, T_train, P_val, T_val, alpha, v1, v2, epochmax, eepoch, epochval, numval);
 end
 
 function [P, T] = leerValoresDeArchivos()
@@ -197,22 +197,38 @@ function b = calcularNuevoBias(capa, b_old, alpha, S)
 %     end
 end
 
-function EEPOCH = calcularErrorEpoca(nro_p, errores_iteracion)
-    EEPOCH = zeros(nro_p, 1);
-    for i = 1:nro_p
+function EEPOCH = calcularErrorEpoca(nro_ps, errores_iteracion)
+    EEPOCH = zeros(nro_ps, 1);
+    for i = 1:nro_ps
         EEPOCH = EEPOCH + errores_iteracion{i};
     end
     EEPOCH = abs(EEPOCH)/4;
 end
 
-function iniciarAprendizaje(P_train, T_train, P_val, T_val, P_test, T_test, alpha, v1, v2, epochmax, epochval)
+function cumple = comprobarEEPOCH(EEPOCH, eepoch)
+    tamanio = size(EEPOCH);
+    cumple = 0;
+    for i = 1:tamanio(1)
+        cumple = cumple + ( EEPOCH(i,1) < eepoch );
+    end
+    if cumple == tamanio
+        cumple = 1;
+    end
+end
+
+function iniciarAprendizaje(P_train, T_train, P_val, T_val, alpha, v1, v2, epochmax, eepoch, epochval, numval)
     % VALORES ALEATORIOS PARA CADA W y b
     % 
     % formula para nros aleatorios en un rango [a, b]
     % r = a + (b-a)*rand(N,1)
-    nro_ps = size(P_train);
-    fprintf(1, "nro de P's %d\n", nro_ps(2));
-    disp(P_train);
+    nro_ps_train = size(P_train);
+    nro_ps_val = size(P_val);
+    
+    val_errores = {};
+    % cont_val incrementa si se verifica que val(k+1) > val(k)
+    cont_val = 0;
+    nro_val = 1;
+    
     nro_capas = size(v1);
     capas_w_b = {};
     for c = 1:nro_capas(2)-1
@@ -230,13 +246,13 @@ function iniciarAprendizaje(P_train, T_train, P_val, T_val, P_test, T_test, alph
             arreglo_a = {};
             errores_iteracion = {};
             % VALIDACION DE P
-            for nro_p = 1:nro_ps
+            for nro_p = 1:nro_ps_train
                 p = P_train(nro_p, :)';
                 target = T_train(nro_p, :)';
                 % CALCULO DE 'a' CAPA POR CAPA
                 arreglo_a{1} = p;
                 fprintf(1, "P %d\n", nro_p);
-                for capa = 1:nro_capas(2)-1;
+                for capa = 1:nro_capas(2)-1
                     n = (capas_w_b{capa}.w)*p + capas_w_b{capa}.b;
                     a = calcularA(n, v2(capa));
                     p = [];
@@ -263,15 +279,51 @@ function iniciarAprendizaje(P_train, T_train, P_val, T_val, P_test, T_test, alph
                 
             end
             % fin de VALIDACION DE TODOS LOS P's
-            EEPOCH = calcularErrorEpoca(nro_p, errores_iteracion);
-            
+            EEPOCH = calcularErrorEpoca(nro_ps, errores_iteracion);
+            cumple = comprobarEEPOCH(EEPOCH, eepoch);
             % fin de EPOCA DE ENTRENAMIENTO
         else
             % EPOCA DE VALIDACION
+            val_errores_iteracion = {};
+            % VALIDACION DE P
+            for nro_p_val = 1:nro_ps_val
+                p = P_val(nro_p_val, :)';
+                target = T_val(nro_p_val, :)';
+                
+                for capa = 1:nro_capas(2)-1
+                    n = (capas_w_b{capa}.w)*p + capas_w_b{capa}.b;
+                    a = calcularA(n, v2(capa));
+                    p = [];
+                    p = a;
+                end
+                % fin del calculo de 'a'
+                e = calcularError(target, a);
+                
+                % GUARDAMOS EL ERROR DE LA ITERACION (ENTRENAMIENTO)
+                val_errores_iteracion{nro_p_val} = e;
+            end
+            % fin de VALIDACION DE TODOS LOS P's
+            EEPOCH = calcularErrorEpoca(nro_ps_val, val_errores_iteracion);
+            val_errores{nro_val} = EEPOCH;
+            
+            if nro_val >= 2
+                aux = val_errores{nro_val} > val_errores{nro_val-1};
+                suma = sum(aux);
+                if suma ~= 0
+                    
+                end
+            end
+            
+            nro_val = nro_val + 1;
+            
             
             
             % fin de EPOCA DE VALIDACION
         end
+        
+        % VERIFICAMOS SI SE CUMPLE ALGUN CRITERIO DE FINALIZACION
+        
+        
     end
     % fin de ENTRENAMIENTO
 end
